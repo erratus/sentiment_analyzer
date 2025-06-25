@@ -43,31 +43,32 @@ device = None
 def load_model():
     """Load the trained sentiment analysis model"""
     global model, tokenizer, label_encoder, device
-    
+
     try:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         model_dir = os.path.join(os.path.dirname(__file__), '..', 'models')
-        
-        # Load tokenizer
-        tokenizer = RobertaTokenizer.from_pretrained(model_dir)
-        
+
+        # Load tokenizer (use the correct tokenizer directory or pretrained name)
+        tokenizer = RobertaTokenizer.from_pretrained(os.path.join(model_dir, 'tokenizer'))
+
         # Load label encoder
         with open(os.path.join(model_dir, 'label_encoder.pkl'), 'rb') as f:
             label_encoder = pickle.load(f)
-        
-        # Load model
+
+        num_classes = len(label_encoder.classes_)
         model = RobertaSentimentClassifier(
-            num_classes=len(label_encoder.classes_),
+            num_classes=num_classes,
             hidden_size=768,
             dropout_rate=0.1
         )
-        model.load_state_dict(torch.load(os.path.join(model_dir, 'model.pt'), map_location=device))
+        model_path = os.path.join(model_dir, 'roberta_sentiment_classifier.pt')
+        model.load_state_dict(torch.load(model_path, map_location=device))
         model.to(device)
         model.eval()
-        
+
         logger.info("Model loaded successfully")
         return True
-        
+
     except Exception as e:
         logger.error(f"Error loading model: {e}")
         return False
